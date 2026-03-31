@@ -1,0 +1,53 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+*.pyd
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# VS Code / IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Generated data & outputs
+!full_dataset.csv
+checkpoints/
+indictrans2-finetuned-final/
+test_locked.csv
+
+# Hugging Face caching
+.huggingface/
+.cache/
+hf_cache/
+
+# Model Files (to prevent accidentally committing large weights)
+*.bin
+*.pt
+*.safetensors
+*.ckpt
+*.h5
+
+# Train Logs & Weights and Biases
+wandb/
+*.log
+runs/
+
+# Environment / Secrets
+.env
+.env.local
+
+*.md
+!README.md

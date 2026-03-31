@@ -1,0 +1,21 @@
+[project]
+name = "translation-finetuning"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "accelerate==0.31.0",
+    "bitsandbytes==0.43.1",
+    "datasets==2.20.0",
+    "evaluate==0.4.2",
+    "peft==0.11.1",
+    "protobuf==3.20.3",
+    "sacrebleu==2.4.2",
+    "sentencepiece==0.2.0",
+    "torch==2.3.0",
+    "transformers==4.41.0",
+    "wandb==0.17.3",
+    "pandas==2.0.3",
+    "evaluate==0.4.2"
+]
