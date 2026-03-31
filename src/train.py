@@ -40,14 +40,14 @@ class RobustLoRATrainer(Seq2SeqTrainer):
             min_lr_ratio=0.05
         )
 
-def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, is_bf16: bool = True) -> Seq2SeqTrainingArguments:
+def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, is_bf16: bool = True, run_name: str = "indictrans2-finetune") -> Seq2SeqTrainingArguments:
     """Deliberate hyperparameters for IndicTrans2 LoRA finetuning."""
     return Seq2SeqTrainingArguments(
         output_dir=output_dir,
         num_train_epochs=5,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
-        gradient_accumulation_steps=16,
+        per_device_train_batch_size=32,
+        per_device_eval_batch_size=32,
+        gradient_accumulation_steps=4,
         learning_rate=2e-5,
         warmup_ratio=0.06,
         label_smoothing_factor=0.1,
@@ -67,12 +67,12 @@ def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, 
         load_best_model_at_end=True,
         metric_for_best_model="chrf++",
         greater_is_better=True,
-        dataloader_num_workers=0,
-        dataloader_pin_memory=False,
+        dataloader_num_workers=2,
+        dataloader_pin_memory=True,
         remove_unused_columns=False,
         logging_steps=50,
         report_to="wandb",
-        run_name="indictrans2-finetune",
+        run_name=run_name,
         seed=42,
     )
 
