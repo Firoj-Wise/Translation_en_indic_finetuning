@@ -56,9 +56,12 @@ def preprocess_dataset_batch(batch: Dict[str, List[str]], tokenizer: AutoTokeniz
     Tokenizes the inputs and targets for a seq2seq dataset.
     Language tags must be appended properly by tokenizer.
     """
+    # The IndicTrans2 tokenizer expects the exact string format "src_lang tgt_lang Sentence"
+    # to be passed to __call__ when mapping.
+    formatted_srcs = [f"{src_lang} {tgt_lang} {text}" for text in batch["src"]]
+    
     inputs = tokenizer(
-        batch["src"],
-        src=True,
+        formatted_srcs,
         max_length=256,
         truncation=True,
         padding=False,
@@ -66,7 +69,6 @@ def preprocess_dataset_batch(batch: Dict[str, List[str]], tokenizer: AutoTokeniz
     with tokenizer.as_target_tokenizer():
         targets = tokenizer(
             batch["tgt"],
-            src=False,
             max_length=256,
             truncation=True,
             padding=False,
