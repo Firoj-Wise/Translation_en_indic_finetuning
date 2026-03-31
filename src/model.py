@@ -20,6 +20,14 @@ def get_lora_model(model_name: str = "ai4bharat/indictrans2-en-indic-dist-200M",
         trust_remote_code=True,
     )
     
+    # Required for gradient checkpointing with PEFT
+    if hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
+    else:
+        def make_inputs_require_grad(module, input, output):
+            output.requires_grad_(True)
+        model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+    
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_2_SEQ_LM,
         r=rank,
