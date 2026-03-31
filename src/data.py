@@ -51,13 +51,14 @@ def clean_and_deduplicate(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(subset=["src"])
     return df.reset_index(drop=True)
 
-def preprocess_dataset_batch(batch: Dict[str, List[str]], tokenizer: AutoTokenizer) -> Dict[str, Any]:
+def preprocess_dataset_batch(batch: Dict[str, List[str]], tokenizer: AutoTokenizer, src_lang: str, tgt_lang: str) -> Dict[str, Any]:
     """
     Tokenizes the inputs and targets for a seq2seq dataset.
     Language tags must be appended properly by tokenizer.
     """
     inputs = tokenizer(
         batch["src"],
+        src=True,
         max_length=256,
         truncation=True,
         padding=False,
@@ -65,6 +66,7 @@ def preprocess_dataset_batch(batch: Dict[str, List[str]], tokenizer: AutoTokeniz
     with tokenizer.as_target_tokenizer():
         targets = tokenizer(
             batch["tgt"],
+            src=False,
             max_length=256,
             truncation=True,
             padding=False,
@@ -78,6 +80,7 @@ def prepare_data(df: pd.DataFrame, tokenizer: AutoTokenizer) -> DatasetDict:
     Handles multiple language directions by separating them, mapping, and combining.
     """
     from datasets import Dataset, concatenate_datasets
+    from functools import partial
     
     all_datasets = []
     
@@ -85,11 +88,11 @@ def prepare_data(df: pd.DataFrame, tokenizer: AutoTokenizer) -> DatasetDict:
     for (src_lang, tgt_lang), group_df in df.groupby(['src_lang', 'tgt_lang']):
         group_dataset = Dataset.from_pandas(group_df)
         
-        def tokenize_group(batch):
-            # Set the exact tokenizer tags for this subgroup before tokenization
+        def tokenize_group(batch, src_lang=src_lang, tgt_lang=tgt_lang):
+            # The IndicTrans2 custom tokenizer requires src_lang on the tokenizer itself
             tokenizer.src_lang = src_lang
             tokenizer.tgt_lang = tgt_lang
-            return preprocess_dataset_batch(batch, tokenizer)
+            return preprocess_dataset_batch(batch, tokenizer, src_lang, tgt_lang)
             
         tokenized_group = group_dataset.map(
             tokenize_group,
