@@ -48,7 +48,7 @@ def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, 
         per_device_train_batch_size=32,
         per_device_eval_batch_size=32,
         gradient_accumulation_steps=4,
-        learning_rate=2e-5,
+        learning_rate=1e-4,  # Increased from 2e-5: LoRA works best with higher learning rates
         warmup_ratio=0.06,
         label_smoothing_factor=0.1,
         weight_decay=0.01,
