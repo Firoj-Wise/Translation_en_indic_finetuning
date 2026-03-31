@@ -2,6 +2,7 @@ import argparse
 import os
 import pandas as pd
 import evaluate
+import torch
 
 from src.utils import set_seed, setup_logger, log_environment_info
 from src.model import get_tokenizer, get_lora_model, merge_and_save_model
