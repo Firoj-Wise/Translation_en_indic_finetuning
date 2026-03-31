@@ -74,9 +74,32 @@ def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, 
         seed=42,
     )
 
+class IndicTransDataCollator(DataCollatorForSeq2Seq):
+    def __call__(self, features, return_tensors=None):
+        features = super().__call__(features, return_tensors=return_tensors)
+        
+        # Manually create decoder_input_ids from labels if they don't exist
+        # because IndicTrans2 model lacks prepare_decoder_input_ids_from_labels
+        if "labels" in features and "decoder_input_ids" not in features:
+            labels = features["labels"]
+            decoder_start_token_id = self.tokenizer.eos_token_id  # which is 2
+
+            decoder_input_ids = labels.clone()
+            # replace padding (-100) with pad_token_id
+            decoder_input_ids[decoder_input_ids == -100] = self.tokenizer.pad_token_id
+            
+            # shift right
+            decoder_input_ids_shifted = torch.zeros_like(decoder_input_ids)
+            decoder_input_ids_shifted[:, 1:] = decoder_input_ids[:, :-1]
+            decoder_input_ids_shifted[:, 0] = decoder_start_token_id
+            
+            features["decoder_input_ids"] = decoder_input_ids_shifted
+            
+        return features
+
 def setup_data_collator(tokenizer):
     """Returns the data collator to handle padding properly."""
-    return DataCollatorForSeq2Seq(
+    return IndicTransDataCollator(
         tokenizer=tokenizer,
         padding=True,
         label_pad_token_id=-100,

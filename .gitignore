@@ -23,7 +23,7 @@ ENV/
 Thumbs.db
 
 # Generated data & outputs
-!full_dataset.csv
+full_dataset.csv
 checkpoints/
 indictrans2-finetuned-final/
 test_locked.csv

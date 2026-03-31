@@ -71,8 +71,9 @@ def main():
             return compute_metrics(eval_preds, tokenizer, bleu_metric, chrf_metric)
             
         data_collator = setup_data_collator(tokenizer)
-        training_args = get_training_args(output_dir=args.output_dir, is_bf16=torch.cuda.is_bf16_supported())
-        
+        is_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+        training_args = get_training_args(output_dir=args.output_dir, is_bf16=is_bf16)
+
         # 4. Trainer Initialization
         trainer = RobustLoRATrainer(
             model=model,
