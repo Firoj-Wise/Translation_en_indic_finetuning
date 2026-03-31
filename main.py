@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument("--final_model_dir", type=str, default="./indictrans2-finetuned-final", help="Final merged model directory")
     parser.add_argument("--push_to_hub", action="store_true", help="Push the final combined model to Hugging Face Hub")
     parser.add_argument("--hub_model_id", type=str, default="firojpaudel/indictrans2-en-npi-mai-200M", help="Hugging Face Hub repo ID")
+    parser.add_argument("--run_name", type=str, default="indictrans2-finetune", help="Weights & Biases run name")
     parser.add_argument("--do_train", action="store_true", help="Run training pipeline")
     parser.add_argument("--do_eval", action="store_true", help="Run post-training evaluation across all directions")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
