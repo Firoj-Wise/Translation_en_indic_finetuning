@@ -93,10 +93,16 @@ def main():
         trainer.train()
         
         # 6. Merge & Unload
-        logger.info(f"Training complete. Merging LoRA and saving to {args.final_model_dir}")
-        merge_and_save_model(model, tokenizer, args.final_model_dir, push_to_hub=args.push_to_hub, hub_model_id=args.hub_model_id)
+        trainer.accelerator.wait_for_everyone()
+        if trainer.is_world_process_zero():
+            logger.info(f"Training complete. Merging LoRA and saving to {args.final_model_dir}")
+            merge_and_save_model(model, tokenizer, args.final_model_dir, push_to_hub=args.push_to_hub, hub_model_id=args.hub_model_id)
+        trainer.accelerator.wait_for_everyone()
 
     if args.do_eval:
+        if "trainer" in locals() and not trainer.is_world_process_zero():
+            return
+            
         logger.info("Evaluating Final Model")
         test_df_path = os.path.join(args.output_dir, "test_locked.csv")
         if not os.path.exists(test_df_path):
