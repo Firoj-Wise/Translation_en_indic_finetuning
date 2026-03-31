@@ -15,6 +15,8 @@ def parse_args():
     parser.add_argument("--data_path", type=str, required=True, help="Path to raw parallel corpus CSV (must have src, tgt, src_lang, tgt_lang, domain)")
     parser.add_argument("--output_dir", type=str, default="./checkpoints", help="Output directory for checkpoints")
     parser.add_argument("--final_model_dir", type=str, default="./indictrans2-finetuned-final", help="Final merged model directory")
+    parser.add_argument("--push_to_hub", action="store_true", help="Push the final combined model to Hugging Face Hub")
+    parser.add_argument("--hub_model_id", type=str, default="firojpaudel/indictrans2-en-npi-mai-200M", help="Hugging Face Hub repo ID")
     parser.add_argument("--do_train", action="store_true", help="Run training pipeline")
     parser.add_argument("--do_eval", action="store_true", help="Run post-training evaluation across all directions")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
@@ -91,7 +93,7 @@ def main():
         
         # 6. Merge & Unload
         logger.info(f"Training complete. Merging LoRA and saving to {args.final_model_dir}")
-        merge_and_save_model(model, tokenizer, args.final_model_dir)
+        merge_and_save_model(model, tokenizer, args.final_model_dir, push_to_hub=args.push_to_hub, hub_model_id=args.hub_model_id)
 
     if args.do_eval:
         logger.info("Evaluating Final Model")

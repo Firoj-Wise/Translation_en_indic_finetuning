@@ -43,10 +43,16 @@ def get_lora_model(model_name: str = "ai4bharat/indictrans2-en-indic-dist-200M",
     model = get_peft_model(model, lora_config)
     return model
 
-def merge_and_save_model(model: torch.nn.Module, tokenizer: AutoTokenizer, output_dir: str):
+def merge_and_save_model(model: torch.nn.Module, tokenizer: AutoTokenizer, output_dir: str, push_to_hub: bool = False, hub_model_id: str = None):
     """
     Merges LoRA weights back into the base model and saves it along with the tokenizer.
+    Optionally pushes to Hugging Face Hub.
     """
     merged_model = model.merge_and_unload()
     merged_model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
+    
+    if push_to_hub and hub_model_id:
+        print(f"Pushing merged model and tokenizer to Hugging Face Hub: {hub_model_id}")
+        merged_model.push_to_hub(hub_model_id)
+        tokenizer.push_to_hub(hub_model_id)
