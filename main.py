@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import evaluate
 import torch
+from transformers.trainer_utils import get_last_checkpoint
 
 from src.utils import set_seed, setup_logger, log_environment_info
 from src.model import get_tokenizer, get_lora_model, merge_and_save_model
@@ -90,7 +91,17 @@ def main():
         
         # 5. Training
         logger.info("Starting training...")
-        trainer.train()
+        
+        # Check for existing checkpoints to resume from
+        last_checkpoint = None
+        if os.path.isdir(args.output_dir):
+            last_checkpoint = get_last_checkpoint(args.output_dir)
+            
+        if last_checkpoint is not None:
+            logger.info(f"Resuming training from checkpoint: {last_checkpoint}")
+            trainer.train(resume_from_checkpoint=last_checkpoint)
+        else:
+            trainer.train()
         
         # 6. Merge & Unload
         trainer.accelerator.wait_for_everyone()

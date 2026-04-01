@@ -20,7 +20,7 @@ class RobustLoRATrainer(Seq2SeqTrainer):
     """
     Custom Seq2SeqTrainer that implements the required warmup and cosine scheduler.
     (Note: Discriminative LR and Gradual Unfreezing are omitted here because
-    we are strictly following the LoRA methodology per the user prompt.
+    we are strictly following the LoRA methodology.
     When using LoRA, the adapter matrices are the only things that train.)
     """
     def create_optimizer_and_scheduler(self, num_training_steps: int):
@@ -61,8 +61,10 @@ def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, 
         predict_with_generate=True,
         generation_max_length=256,
         generation_num_beams=5,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
+        evaluation_strategy="steps",
+        eval_steps=500,
+        save_strategy="steps",
+        save_steps=500,
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="chrf++",
