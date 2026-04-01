@@ -45,9 +45,9 @@ def get_training_args(output_dir: str = "./checkpoints", is_fp16: bool = False, 
     return Seq2SeqTrainingArguments(
         output_dir=output_dir,
         num_train_epochs=5,
-        per_device_train_batch_size=32,
-        per_device_eval_batch_size=32,
-        gradient_accumulation_steps=4,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=2,
+        gradient_accumulation_steps=16,
         learning_rate=1e-4,  # Increased from 2e-5: LoRA works best with higher learning rates
         warmup_ratio=0.06,
         label_smoothing_factor=0.1,
