@@ -22,10 +22,10 @@ pipeline:
 # ----------------------------------------------------------
 ingestion:
   # "huggingface" | "local"
-  source: "local"
+  source: "huggingface"
 
   huggingface:
-    dataset_name: "placeholder/dataset-name"   # Replace with actual HF dataset
+    dataset_name: "Firoj112/Translation_en_indic_dataset"
     subset: null
     split: "train"
     src_column: "src"
