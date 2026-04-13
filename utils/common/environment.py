@@ -28,7 +28,7 @@ def get_environment_info() -> Dict[str, str]:
         info["cuda_version"] = torch.version.cuda or "N/A"
         info["gpu_model"] = torch.cuda.get_device_name(0)
         info["gpu_count"] = str(torch.cuda.device_count())
-        info["gpu_memory_gb"] = f"{torch.cuda.get_device_properties(0).total_mem / 1e9:.1f}"
+        info["gpu_memory_gb"] = f"{torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}"
     else:
         info["cuda_version"] = "N/A (CPU only)"
         info["gpu_model"] = "N/A"
