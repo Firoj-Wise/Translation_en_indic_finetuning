@@ -1,0 +1,169 @@
+# ============================================================
+# IndicTrans2 Translation Finetuning — Master Configuration
+# ============================================================
+# All hyperparameters, paths, and flags live here.
+# Usage:  python run_pipeline.py --config configs/default.yaml
+# Override any key:  --override training.num_epochs=3
+# ============================================================
+
+pipeline:
+  # Which stages to run (order matters).
+  # Options: ingestion, validation, preprocessing, training, evaluation
+  stages:
+    - ingestion
+    - validation
+    - preprocessing
+    - training
+    - evaluation
+  seed: 42
+
+# ----------------------------------------------------------
+# 1. Data Ingestion
+# ----------------------------------------------------------
+ingestion:
+  # "huggingface" | "local"
+  source: "local"
+
+  huggingface:
+    dataset_name: "placeholder/dataset-name"   # Replace with actual HF dataset
+    subset: null
+    split: "train"
+    src_column: "src"
+    tgt_column: "tgt"
+    src_lang_column: "src_lang"
+    tgt_lang_column: "tgt_lang"
+    domain_column: "domain"
+
+  local:
+    data_dir: "./finetuning_data"
+    csv_path: null                  # Pre-built CSV — skips .txt assembly if set
+
+  directions:
+    - { src_lang: "eng_Latn", tgt_lang: "npi_Deva" }
+    - { src_lang: "npi_Deva", tgt_lang: "eng_Latn" }
+    - { src_lang: "eng_Latn", tgt_lang: "mai_Deva" }
+    - { src_lang: "mai_Deva", tgt_lang: "eng_Latn" }
+
+# ----------------------------------------------------------
+# 2. Data Validation
+# ----------------------------------------------------------
+validation:
+  min_word_len: 3
+  max_word_len: 200
+  max_length_ratio: 3.5
+  max_ascii_ratio_devanagari: 0.20
+  reject_identical_pairs: true
+  reject_empty_or_numeric: true
+  deduplicate_on: "src"
+
+# ----------------------------------------------------------
+# 3. Preprocessing
+# ----------------------------------------------------------
+preprocessing:
+  normalization: "NFC"              # Always NFC for Devanagari
+  max_seq_length: 256
+  tokenizer_num_proc: 4
+  split_ratios:
+    train: 0.90
+    val: 0.05
+    test: 0.05
+
+# ----------------------------------------------------------
+# 4. Model
+# ----------------------------------------------------------
+model:
+  name: "ai4bharat/indictrans2-en-indic-dist-200M"
+  trust_remote_code: true
+
+  lora:
+    enabled: true
+    rank: 16
+    alpha: 32
+    dropout: 0.05
+    bias: "none"
+    target_modules:
+      - "q_proj"
+      - "k_proj"
+      - "v_proj"
+      - "out_proj"
+      - "fc1"
+      - "fc2"
+
+  qlora:
+    enabled: false
+    quant_type: "nf4"
+    compute_dtype: "bfloat16"
+    double_quant: true
+
+# ----------------------------------------------------------
+# 5. Training
+# ----------------------------------------------------------
+training:
+  num_epochs: 5
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 16
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.06
+  label_smoothing: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  mixed_precision: "bf16"           # "bf16" | "fp16" | "no"
+  gradient_checkpointing: true
+  generation_num_beams: 5
+  generation_max_length: 256
+  eval_strategy: "steps"
+  eval_steps: 500
+  save_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 3
+  metric_for_best_model: "chrf++"
+  greater_is_better: true
+  dataloader_num_workers: 2
+  dataloader_pin_memory: true
+  logging_steps: 50
+  output_dir: "./checkpoints"
+  final_model_dir: "./indictrans2-finetuned-final"
+
+  # AdamW betas (beta2=0.98 from "Attention Is All You Need")
+  adam_beta1: 0.9
+  adam_beta2: 0.98
+  adam_epsilon: 1.0e-8
+
+  # Cosine scheduler floor
+  min_lr_ratio: 0.05
+
+# ----------------------------------------------------------
+# 6. Evaluation
+# ----------------------------------------------------------
+evaluation:
+  batch_size: 32
+  num_beams: 5
+  max_length: 256
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# ----------------------------------------------------------
+# 7. Experiment Tracking (W&B)
+# ----------------------------------------------------------
+tracking:
+  backend: "wandb"                  # "wandb" | "none"
+  project: "indictrans2-finetuning"
+  run_name: "indictrans2-finetune"
+  log_model: true
+
+# ----------------------------------------------------------
+# 8. Versioning
+# ----------------------------------------------------------
+versioning:
+  enabled: true
+  hash_dataset: true
+  hash_config: true
+  output_dir: "./runs"
+
+# ----------------------------------------------------------
+# 9. Hub
+# ----------------------------------------------------------
+hub:
+  push_to_hub: false
+  model_id: "firojpaudel/indictrans2-en-npi-mai-200M"

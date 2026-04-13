@@ -43,7 +43,10 @@ hf_cache/
 # Train Logs & Weights and Biases
 wandb/
 *.log
+
+# Pipeline run outputs
 runs/
+run_metadata*.json
 
 # Environment / Secrets
 .env
