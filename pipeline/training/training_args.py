@@ -95,6 +95,11 @@ def build_training_args(config: Dict[str, Any]) -> Seq2SeqTrainingArguments:
 
         # Reproducibility
         seed=config["pipeline"].get("seed", 42),
+
+        # Hub persistence (critical for Kaggle Auto-Resume)
+        push_to_hub=config.get("hub", {}).get("push_to_hub", False),
+        hub_model_id=config.get("hub", {}).get("model_id", None),
+        hub_strategy="checkpoint",
     )
 
     logger.info(
