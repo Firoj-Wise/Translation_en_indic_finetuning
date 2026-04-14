@@ -15,6 +15,10 @@ import logging
 from typing import Any, Dict, Optional
 
 import pandas as pd
+try:
+    import git
+except ImportError:
+    git = None
 
 logger = logging.getLogger("versioning.hashing")
 
@@ -77,7 +81,8 @@ def hash_dataset(
 def get_git_commit() -> Optional[str]:
     """Return the current git commit hash, or None."""
     try:
-        import git
+        if git is None:
+            return None
         repo = git.Repo(search_parent_directories=True)
         commit = repo.head.commit.hexsha
         logger.debug(f"Git commit: {commit[:12]}…")

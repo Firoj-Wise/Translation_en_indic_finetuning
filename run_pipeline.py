@@ -26,8 +26,41 @@ from typing import Any, Dict
 import yaml
 import pandas as pd
 
-# ── Logging first ────────────────────────────────────────────
 from utils.logging.setup import setup_logger
+
+# ── Pipeline components ──────────────────────────────────────
+from utils.common.seed import set_seed
+from utils.common.environment import log_environment_info
+from pipeline.benchmarking.tracker.wandb_tracker import WandBTracker
+from pipeline.benchmarking.tracker.wrapped_tracker import NoOpTracker
+from pipeline.ingestion.loader import load_data
+from pipeline.validation.validator import validate
+from pipeline.preprocessing.processor import process
+from pipeline.model.loading.indictrans import (
+    load_tokenizer,
+    load_model,
+)
+from pipeline.training.training_args import build_training_args
+from pipeline.training.data_collator import build_data_collator
+from pipeline.training.trainer import RobustLoRATrainer
+from pipeline.training.callbacks import (
+    VersioningCallback,
+    GPUMonitorCallback,
+)
+from pipeline.training.merge import merge_and_save
+from pipeline.evaluation.evaluate.compute_metrics import make_compute_metrics
+from pipeline.evaluation.evaluate.evaluator import evaluate_all_directions
+from pipeline.benchmarking.runner.benchmark_runner import compare_against_previous
+from utils.serializer.export_results import (
+    export_to_json,
+    export_to_csv,
+)
+from versioning.version_metadata import (
+    create_run_metadata,
+    update_with_results,
+    save_run_metadata,
+)
+from transformers.trainer_utils import get_last_checkpoint
 
 logger = setup_logger("pipeline", log_file="pipeline.log")
 
@@ -115,10 +148,8 @@ def init_tracker(config: Dict[str, Any]):
     backend = config.get("tracking", {}).get("backend", "wandb")
 
     if backend == "wandb":
-        from pipeline.benchmarking.tracker.wandb_tracker import WandBTracker
         tracker = WandBTracker()
     else:
-        from pipeline.benchmarking.tracker.wrapped_tracker import NoOpTracker
         tracker = NoOpTracker()
 
     track_cfg = config.get("tracking", {})
@@ -162,10 +193,6 @@ def main():
     logger.info(f"Pipeline stages: {stages}")
     logger.info(f"Seed: {seed}")
 
-    # ── Environment & reproducibility ─────────────────────────
-    from utils.common.seed import set_seed
-    from utils.common.environment import log_environment_info
-
     set_seed(seed)
     env_info = log_environment_info(logger)
 
@@ -192,7 +219,6 @@ def main():
     # ==========================================================
     if "ingestion" in stages:
         logger.info("=== Stage 1: Ingestion ===")
-        from pipeline.ingestion.loader import load_data
         df = load_data(config)
         logger.info(f"Ingested {len(df):,} rows")
 
@@ -205,7 +231,6 @@ def main():
             raise RuntimeError(
                 "Validation requires ingestion to run first."
             )
-        from pipeline.validation.validator import validate
         df, validation_report = validate(df, config)
 
         # Log to tracker
@@ -233,9 +258,6 @@ def main():
                 "Preprocessing requires ingestion + validation."
             )
 
-        from pipeline.model.loading.indictrans import load_tokenizer
-        from pipeline.preprocessing.processor import process
-
         tokenizer = load_tokenizer(config)
         train_dataset, val_dataset, test_df, split_stats = process(
             df, tokenizer, config
@@ -252,7 +274,6 @@ def main():
     # ==========================================================
     ver_cfg = config.get("versioning", {})
     if ver_cfg.get("enabled", True) and df is not None:
-        from versioning.version_metadata import create_run_metadata
         run_meta = create_run_metadata(config, df, env_info)
         tracker.log_artifact(
             "run_metadata",
@@ -269,19 +290,6 @@ def main():
             raise RuntimeError(
                 "Training requires preprocessing to run first."
             )
-
-        from pipeline.model.loading.indictrans import load_model
-        from pipeline.training.training_args import build_training_args
-        from pipeline.training.data_collator import build_data_collator
-        from pipeline.training.trainer import RobustLoRATrainer
-        from pipeline.training.callbacks import (
-            VersioningCallback,
-            GPUMonitorCallback,
-        )
-        from pipeline.evaluation.evaluate.compute_metrics import (
-            make_compute_metrics,
-        )
-        from transformers.trainer_utils import get_last_checkpoint
 
         model = load_model(config)
         training_args = build_training_args(config)
@@ -328,7 +336,6 @@ def main():
         # ── Merge LoRA ────────────────────────────────────────
         trainer.accelerator.wait_for_everyone()
         if trainer.is_world_process_zero():
-            from pipeline.training.merge import merge_and_save
             merge_and_save(model, tokenizer, config)
         trainer.accelerator.wait_for_everyone()
 
@@ -351,14 +358,9 @@ def main():
                 )
             test_df = pd.read_csv(test_path)
 
-        from pipeline.evaluation.evaluate.evaluator import (
-            evaluate_all_directions,
-        )
-
         eval_results = evaluate_all_directions(test_df, config)
 
         # Log to tracker
-        from pipeline.benchmarking.tracker.wandb_tracker import WandBTracker
         if isinstance(tracker, WandBTracker):
             tracker.log_eval_results(
                 [r.to_dict() for r in eval_results]
@@ -375,10 +377,6 @@ def main():
             )
 
         # Export results
-        from utils.serializer.export_results import (
-            export_to_json,
-            export_to_csv,
-        )
         results_dir = config.get("versioning", {}).get("output_dir", "./runs")
         export_to_json(
             eval_results,
@@ -394,9 +392,6 @@ def main():
     # BENCHMARKING (compare against previous runs)
     # ==========================================================
     if eval_results and run_meta:
-        from pipeline.benchmarking.runner.benchmark_runner import (
-            compare_against_previous,
-        )
         comparison = compare_against_previous(
             eval_results, run_meta.to_dict(), config
         )
@@ -411,10 +406,6 @@ def main():
     # SAVE FINAL VERSIONING METADATA
     # ==========================================================
     if run_meta and ver_cfg.get("enabled", True):
-        from versioning.version_metadata import (
-            update_with_results,
-            save_run_metadata,
-        )
         if eval_results:
             run_meta = update_with_results(
                 run_meta, eval_results, training_duration

@@ -74,7 +74,7 @@ def build_training_args(config: Dict[str, Any]) -> Seq2SeqTrainingArguments:
         generation_num_beams=tcfg.get("generation_num_beams", 5),
 
         # Checkpointing
-        evaluation_strategy=tcfg.get("eval_strategy", "steps"),
+        eval_strategy=tcfg.get("eval_strategy", "steps"),
         eval_steps=tcfg.get("eval_steps", 500),
         save_strategy=tcfg.get("save_strategy", "steps"),
         save_steps=tcfg.get("save_steps", 500),

@@ -8,6 +8,8 @@ from typing import Any, Dict
 import pandas as pd
 
 from constants.types import IngestionSource
+from pipeline.ingestion.huggingface_loader import load_from_huggingface
+from pipeline.ingestion.local_loader import load_from_local
 
 logger = logging.getLogger("ingestion")
 
@@ -33,11 +35,9 @@ def load_data(config: Dict[str, Any]) -> pd.DataFrame:
     source = config["ingestion"]["source"]
 
     if source == IngestionSource.HUGGINGFACE:
-        from pipeline.ingestion.huggingface_loader import load_from_huggingface
         df = load_from_huggingface(config)
 
     elif source == IngestionSource.LOCAL:
-        from pipeline.ingestion.local_loader import load_from_local
         df = load_from_local(config)
 
     else:

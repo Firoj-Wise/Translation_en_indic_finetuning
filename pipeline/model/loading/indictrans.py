@@ -9,8 +9,17 @@ import logging
 from typing import Any, Dict, Tuple
 
 import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-from peft import LoraConfig, get_peft_model, TaskType
+from transformers import (
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
+from peft import (
+    LoraConfig,
+    get_peft_model,
+    TaskType,
+    prepare_model_for_kbit_training,
+)
 
 logger = logging.getLogger("model.loading")
 
@@ -61,8 +70,6 @@ def load_model(config: Dict[str, Any]) -> torch.nn.Module:
     qlora_cfg = model_cfg.get("qlora", {})
     if qlora_cfg.get("enabled", False):
         logger.info("Loading model with QLoRA (4-bit quantisation)")
-        from transformers import BitsAndBytesConfig
-        from peft import prepare_model_for_kbit_training
 
         compute_dtype = getattr(torch, qlora_cfg.get("compute_dtype", "bfloat16"))
         bnb_config = BitsAndBytesConfig(
@@ -89,6 +96,12 @@ def load_model(config: Dict[str, Any]) -> torch.nn.Module:
         )
 
     # ── Enable input grads for gradient checkpointing ─────────
+    if model_cfg.get("gradient_checkpointing", True):
+        model.config.use_cache = False
+        # Some older models use this flag
+        if hasattr(model.config, "pretraining_tp"):
+            model.config.pretraining_tp = 1
+
     if hasattr(model, "enable_input_require_grads"):
         model.enable_input_require_grads()
     else:

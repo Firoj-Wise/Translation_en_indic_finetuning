@@ -44,10 +44,14 @@ def setup_logger(
     logger.setLevel(level)
     formatter = logging.Formatter(_LOG_FORMAT, datefmt=_DATE_FORMAT)
 
-    # ── Stdout handler ────────────────────────────────────────
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    stdout_handler.setFormatter(formatter)
-    logger.addHandler(stdout_handler)
+    import os
+    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+
+    # ── Stdout handler (only on master process to avoid double logging) ────────────────
+    if local_rank == 0:
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(formatter)
+        logger.addHandler(stdout_handler)
 
     # ── File handler (optional) ───────────────────────────────
     if log_file:

@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import wandb
 from pipeline.benchmarking.tracker.wrapped_tracker import BaseTracker
 
 logger = logging.getLogger("benchmarking.wandb")
@@ -131,6 +132,5 @@ class WandBTracker(BaseTracker):
 
     def finish(self) -> None:
         if self._run is not None:
-            import wandb
             wandb.finish()
             logger.info("W&B run finished.")
