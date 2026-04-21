@@ -106,6 +106,10 @@ class IndicTransTranslator:
             
             # Proper IndicTrans2 postprocessing (handles devanagari punctuation mapping, un-tokenizes spaces)
             postprocessed = self.ip.postprocess_batch(decoded, lang=tgt_lang)
+            
+            # Temporary fix for IndicTransToolkit Urdu question mark bug in certain Devanagari langs
+            postprocessed = [t.replace("؟", "?") for t in postprocessed]
+            
             results.extend(postprocessed)
             
         return results
