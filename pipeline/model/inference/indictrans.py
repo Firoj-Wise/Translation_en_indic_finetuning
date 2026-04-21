@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 
 import torch
 from transformers import pipeline as hf_pipeline, AutoTokenizer
+from IndicTransToolkit.processor import IndicProcessor
 
 logger = logging.getLogger("model.inference")
 
@@ -40,8 +41,9 @@ class IndicTransTranslator:
         self.num_beams = eval_cfg.get("num_beams", 5)
         self.max_length = eval_cfg.get("max_length", 256)
         self.length_penalty = eval_cfg.get("length_penalty", 1.0)
-        self.no_repeat_ngram_size = eval_cfg.get("no_repeat_ngram_size", 3)
+        self.no_repeat_ngram_size = eval_cfg.get("no_repeat_ngram_size", 0) # Defaults to 0 to prevent hallucination loops
 
+        self.ip = IndicProcessor(inference=True)
         self.device = 0 if torch.cuda.is_available() else -1
 
     def translate(
@@ -64,8 +66,8 @@ class IndicTransTranslator:
         self.tokenizer.src_lang = src_lang
         self.tokenizer.tgt_lang = tgt_lang
         
-        # IndicTrans2 expects inputs prefixed with "<src_lang> <tgt_lang> "
-        formatted_texts = [f"{src_lang} {tgt_lang} {t}" for t in texts]
+        # Proper IndicTrans2 preprocessing (adds src_lang, tgt_lang tokens and standardizes punctuation)
+        formatted_texts = self.ip.preprocess_batch(texts, src_lang=src_lang, tgt_lang=tgt_lang)
         
         results = []
         # Fallback to model's device
@@ -79,18 +81,31 @@ class IndicTransTranslator:
             # Move inputs to device (handles nested dicts)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
-            # Generate!
+            # Generation
             with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_length=self.max_length,
-                    num_beams=self.num_beams,
-                    length_penalty=self.length_penalty,
-                    no_repeat_ngram_size=self.no_repeat_ngram_size,
-                )
+                gen_kwargs = {
+                    "max_length": self.max_length,
+                    "num_beams": self.num_beams,
+                    "length_penalty": self.length_penalty,
+                }
+                
+                # Only use no_repeat_ngram_size if it's explicitly enabled (> 0)
+                # Setting this >0 often breaks Devanagari translation because proper grammar 
+                # naturally repeats trigrams.
+                if self.no_repeat_ngram_size > 0:
+                    gen_kwargs["no_repeat_ngram_size"] = self.no_repeat_ngram_size
+                
+                outputs = self.model.generate(**inputs, **gen_kwargs)
             
             # Decode
-            decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
-            results.extend(decoded)
+            decoded = self.tokenizer.batch_decode(
+                outputs, 
+                skip_special_tokens=True, 
+                clean_up_tokenization_spaces=True
+            )
+            
+            # Proper IndicTrans2 postprocessing (handles devanagari punctuation mapping, un-tokenizes spaces)
+            postprocessed = self.ip.postprocess_batch(decoded, lang=tgt_lang)
+            results.extend(postprocessed)
             
         return results

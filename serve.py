@@ -53,7 +53,7 @@ def load_translation_logic():
             "num_beams": 5,
             "max_length": 256,
             "length_penalty": 1.0,
-            "no_repeat_ngram_size": 3
+            "no_repeat_ngram_size": 0
         }
     }
     translator = IndicTransTranslator(model, tokenizer, inference_cfg)

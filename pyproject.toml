@@ -25,4 +25,5 @@ dependencies = [
     "uvicorn>=0.44.0",
     "pydantic>=2.13.3",
     "python-multipart>=0.0.26",
+    "indictranstoolkit>=1.1.1",
 ]
