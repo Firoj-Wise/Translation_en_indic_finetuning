@@ -22,9 +22,10 @@ def main():
     args = parser.parse_args()
 
     logger = setup_logger("inference")
-    logger.info(f"Loading base model: {args.base_model}")
+    logger.info(f"Loading tokenizer from adapter: {args.adapter_path}")
+    tokenizer = AutoTokenizer.from_pretrained(args.adapter_path, trust_remote_code=True)
     
-    tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
+    logger.info(f"Loading base model: {args.base_model}")
     
     if args.quantize:
         logger.info("Using 4-bit quantization")
