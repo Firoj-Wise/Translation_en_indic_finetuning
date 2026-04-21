@@ -144,10 +144,11 @@ If you want to host the model via a REST API:
 # Start the Uvicorn server (defaults to port 8000)
 uv run python serve.py
 
-# Send requests (example via cURL)
+# Send requests (example via cURL using form data)
 curl -X POST "http://localhost:8000/translate" \
-     -H "Content-Type: application/json" \
-     -d '{"text": "How to apply for a loan in the bank?", "src_lang": "eng_Latn", "tgt_lang": "npi_Deva"}'
+     -F "text=How to apply for a loan in the bank?" \
+     -F "src_lang=eng_Latn" \
+     -F "tgt_lang=npi_Deva"
 ```
 
 ## End-to-End Workflow

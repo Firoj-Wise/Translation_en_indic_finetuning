@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
 from pydantic import BaseModel
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, BitsAndBytesConfig
@@ -15,11 +15,6 @@ app = FastAPI(title="Domain-Adapted IndicTrans2 API", description="English to Ne
 
 # Global translator instance
 translator = None
-
-class TranslateRequest(BaseModel):
-    text: str
-    src_lang: str = "eng_Latn"
-    tgt_lang: str = "npi_Deva"  # Switch to 'mai_Deva' for Maithili
 
 class TranslateResponse(BaseModel):
     original_text: str
@@ -65,22 +60,26 @@ def load_translation_logic():
     logger.info("✅ Translation Server Ready!")
 
 @app.post("/translate", response_model=TranslateResponse)
-def translate_endpoint(req: TranslateRequest):
+def translate_endpoint(
+    text: str = Form(..., description="Text to translate"),
+    src_lang: str = Form("eng_Latn", description="Source language code"),
+    tgt_lang: str = Form("npi_Deva", description="Target language code")
+):
     if not translator:
         raise HTTPException(status_code=503, detail="Model is still loading. Please try again in a few seconds.")
     
     try:
         results = translator.translate_batch(
-            [req.text], 
-            src_lang=req.src_lang, 
-            tgt_lang=req.tgt_lang, 
+            [text], 
+            src_lang=src_lang, 
+            tgt_lang=tgt_lang, 
             batch_size=1
         )
         return TranslateResponse(
-            original_text=req.text,
+            original_text=text,
             translation=results[0],
-            src_lang=req.src_lang,
-            tgt_lang=req.tgt_lang
+            src_lang=src_lang,
+            tgt_lang=tgt_lang
         )
     except Exception as e:
         logger.error(f"Translation error: {e}")
