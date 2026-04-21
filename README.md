@@ -112,6 +112,44 @@ All 4 directions trained jointly in a single model:
 | eng -> mai | `eng_Latn` | `mai_Deva` |
 | mai -> eng | `mai_Deva` | `eng_Latn` |
 
+## Inference / Interactive Mode
+
+After finetuning, you can test translations in an interactive command-line interface. By default, it loads the base model in 4-bit (QLoRA) to save memory and applies your fine-tuned adapter.
+
+```bash
+uv run python inference/run_inference.py \
+    --adapter_path Firoj112/indictrans2-en-npi-mai-finetuned \
+    --quantize
+```
+
+**Features:**
+- Type your sentences directly into the console.
+- Specify source and target languages using `--src_lang` and `--tgt_lang` flags (defaults to `eng_Latn` -> `npi_Deva`).
+- Type `quit` or `exit` to end the session.
+
+To run a single translation without interaction:
+```bash
+uv run python inference/run_inference.py \
+    --adapter_path Firoj112/indictrans2-en-npi-mai-finetuned \
+    --quantize \
+    --text "Agriculture is the backbone of our economy." \
+    --src_lang eng_Latn \
+    --tgt_lang npi_Deva
+```
+
+## Running as a Server (FastAPI)
+
+If you want to host the model via a REST API:
+```bash
+# Start the Uvicorn server (defaults to port 8000)
+uv run python serve.py
+
+# Send requests (example via cURL)
+curl -X POST "http://localhost:8000/translate" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "How to apply for a loan in the bank?", "src_lang": "eng_Latn", "tgt_lang": "npi_Deva"}'
+```
+
 ## End-to-End Workflow
 
 ### 1. Data Ingestion
