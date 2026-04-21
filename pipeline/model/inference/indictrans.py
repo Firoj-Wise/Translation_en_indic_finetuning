@@ -83,7 +83,6 @@ class IndicTransTranslator:
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    forced_bos_token_id=bos_token_id,
                     max_length=self.max_length,
                     num_beams=self.num_beams,
                     length_penalty=self.length_penalty,
