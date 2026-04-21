@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'linux'",
@@ -1890,10 +1890,13 @@ dependencies = [
     { name = "bitsandbytes" },
     { name = "datasets" },
     { name = "evaluate" },
+    { name = "gitpython" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "peft" },
     { name = "protobuf" },
+    { name = "psutil" },
+    { name = "pyyaml" },
     { name = "sacrebleu" },
     { name = "sentencepiece" },
     { name = "torch" },
@@ -1907,10 +1910,13 @@ requires-dist = [
     { name = "bitsandbytes", specifier = "==0.43.1" },
     { name = "datasets", specifier = "==2.20.0" },
     { name = "evaluate", specifier = "==0.4.0" },
+    { name = "gitpython", specifier = ">=3.1.0" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "pandas", specifier = "==2.2.0" },
     { name = "peft", specifier = "==0.11.1" },
     { name = "protobuf", specifier = "==3.20.3" },
+    { name = "psutil", specifier = ">=5.9.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "sacrebleu", specifier = "==2.4.2" },
     { name = "sentencepiece", specifier = "==0.2.0" },
     { name = "torch", specifier = "==2.3.0" },

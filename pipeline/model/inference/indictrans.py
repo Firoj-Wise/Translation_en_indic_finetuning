@@ -44,21 +44,6 @@ class IndicTransTranslator:
 
         self.device = 0 if torch.cuda.is_available() else -1
 
-    def _get_pipeline(self, src_lang: str, tgt_lang: str):
-        """Build a HF translation pipeline for the given direction."""
-        return hf_pipeline(
-            "translation",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            src_lang=src_lang,
-            tgt_lang=tgt_lang,
-            device=self.device,
-            max_length=self.max_length,
-            num_beams=self.num_beams,
-            length_penalty=self.length_penalty,
-            no_repeat_ngram_size=self.no_repeat_ngram_size,
-        )
-
     def translate(
         self,
         text: str,
@@ -66,8 +51,7 @@ class IndicTransTranslator:
         tgt_lang: str = "npi_Deva",
     ) -> str:
         """Translate a single text string."""
-        pipe = self._get_pipeline(src_lang, tgt_lang)
-        return pipe(text)[0]["translation_text"]
+        return self.translate_batch([text], src_lang, tgt_lang, batch_size=1)[0]
 
     def translate_batch(
         self,
@@ -76,7 +60,38 @@ class IndicTransTranslator:
         tgt_lang: str,
         batch_size: int = 32,
     ) -> List[str]:
-        """Translate a list of texts."""
-        pipe = self._get_pipeline(src_lang, tgt_lang)
-        results = pipe(texts, batch_size=batch_size)
-        return [r["translation_text"] for r in results]
+        """Translate a list of texts using direct generation to support QLoRA/PEFT cleanly."""
+        self.tokenizer.src_lang = src_lang
+        self.tokenizer.tgt_lang = tgt_lang
+        
+        # IndicTrans2 expects inputs prefixed with "<src_lang> <tgt_lang> "
+        formatted_texts = [f"{src_lang} {tgt_lang} {t}" for t in texts]
+        
+        results = []
+        # Fallback to model's device
+        device = getattr(self.model, "device", torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+        bos_token_id = self.tokenizer.convert_tokens_to_ids(tgt_lang)
+        
+        for i in range(0, len(formatted_texts), batch_size):
+            batch = formatted_texts[i : i + batch_size]
+            inputs = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=self.max_length)
+            
+            # Move inputs to device (handles nested dicts)
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            # Generate!
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    forced_bos_token_id=bos_token_id,
+                    max_length=self.max_length,
+                    num_beams=self.num_beams,
+                    length_penalty=self.length_penalty,
+                    no_repeat_ngram_size=self.no_repeat_ngram_size,
+                )
+            
+            # Decode
+            decoded = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            results.extend(decoded)
+            
+        return results

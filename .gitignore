@@ -54,3 +54,4 @@ run_metadata*.json
 
 *.md
 !README.md
+!HUGGINGFACE_MODEL_CARD.md
