@@ -104,11 +104,12 @@ class IndicTransTranslator:
                 clean_up_tokenization_spaces=True
             )
             
+            # FIX: IndicTransToolkit transliterates Arabic/Urdu question marks into garbage ("3-") during Devanagari postprocessing. 
+            # We MUST intercept and correct it to a standard question mark BEFORE passing it to IndicProcessor.
+            decoded = [t.replace("؟", "?") for t in decoded]
+            
             # Proper IndicTrans2 postprocessing (handles devanagari punctuation mapping, un-tokenizes spaces)
             postprocessed = self.ip.postprocess_batch(decoded, lang=tgt_lang)
-            
-            # Temporary fix for IndicTransToolkit Urdu question mark bug in certain Devanagari langs
-            postprocessed = [t.replace("؟", "?") for t in postprocessed]
             
             results.extend(postprocessed)
             
